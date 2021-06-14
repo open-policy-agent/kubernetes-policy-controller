@@ -65,6 +65,7 @@ spec:
             - --exempt-namespace={{ .Release.Namespace }}
             - --operation=webhook
             - --enable-mutation={{ .Values.experimentalEnableMutation}}
+            - --disable-cert-rotation={{ not .Values.certificates.generate }}
             - HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_DISABLED_BUILTIN
           imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           image: "{{ .Values.image.repository }}:{{ .Values.image.release }}"
@@ -80,6 +81,10 @@ spec:
         HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_IMAGE_PULL_SECRETS: ""
       hostNetwork: HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_HOST_NETWORK
       priorityClassName: HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_PRIORITY_CLASS_NAME
+      volumes:
+        - name: cert
+          secret:
+            secretName: "{{ .Values.certificates.secretName }}"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -133,29 +138,31 @@ metadata:
   labels:
     gatekeeper.sh/system: "yes"
   name: gatekeeper-validating-webhook-configuration
+  annotations:
+    HELMSUBST_VALIDATING_WEBHOOK_ANNOTATIONS: ""
 webhooks:
-- clientConfig:
-    service:
-      name: gatekeeper-webhook-service
-      namespace: gatekeeper-system
-      path: /v1/admit
-  name: validation.gatekeeper.sh
-  timeoutSeconds: HELMSUBST_VALIDATING_WEBHOOK_TIMEOUT
-  rules:
-  - apiGroups:
-    - "*"
-    apiVersions:
-    - '*'
-    operations: HELMSUBST_VALIDATING_WEBHOOK_OPERATION_RULES
-    resources:
-    - '*'
-- clientConfig:
-    service:
-      name: gatekeeper-webhook-service
-      namespace: gatekeeper-system
-      path: /v1/admitlabel
-  name: check-ignore-label.gatekeeper.sh
-  timeoutSeconds: HELMSUBST_VALIDATING_WEBHOOK_TIMEOUT
+  - clientConfig:
+      service:
+        name: gatekeeper-webhook-service
+        namespace: gatekeeper-system
+        path: /v1/admit
+    name: validation.gatekeeper.sh
+    timeoutSeconds: HELMSUBST_VALIDATING_WEBHOOK_TIMEOUT
+    rules:
+      - apiGroups:
+          - "*"
+        apiVersions:
+          - "*"
+        operations: HELMSUBST_VALIDATING_WEBHOOK_OPERATION_RULES
+        resources:
+          - "*"
+  - clientConfig:
+      service:
+        name: gatekeeper-webhook-service
+        namespace: gatekeeper-system
+        path: /v1/admitlabel
+    name: check-ignore-label.gatekeeper.sh
+    timeoutSeconds: HELMSUBST_VALIDATING_WEBHOOK_TIMEOUT
 ---
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
@@ -180,8 +187,8 @@ spec:
     pods: HELMSUBST_RESOURCEQUOTA_POD_LIMIT
   scopeSelector:
     matchExpressions:
-    - operator: In
-      scopeName: PriorityClass
-      values:
-      - HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_PRIORITY_CLASS_NAME
-      - HELMSUBST_DEPLOYMENT_AUDIT_PRIORITY_CLASS_NAME
+      - operator: In
+        scopeName: PriorityClass
+        values:
+          - HELMSUBST_DEPLOYMENT_CONTROLLER_MANAGER_PRIORITY_CLASS_NAME
+          - HELMSUBST_DEPLOYMENT_AUDIT_PRIORITY_CLASS_NAME
