@@ -39,7 +39,7 @@ func NewFilter(run string) (Filter, error) {
 	return Filter{}, nil
 }
 
-// MatchesTest filters the set of constraint tests to run by constraint name
+// MatchesConstraint filters the set of constraint tests to run by constraint name
 // and the tests contained in the constraint. Returns true if tests in the constraint
 // should be run.
 //
@@ -47,13 +47,13 @@ func NewFilter(run string) (Filter, error) {
 // matches `constraint`.
 // If a constraint regex was not specified but a test regex was, returns true if
 // at least one test in `tests` matches the test regex.
-func (f Filter) MatchesTest(c Test) bool {
+func (f Filter) MatchesConstraint(c Test) bool {
 	return true
 }
 
-// MatchesCase filters the set of tests to run by name.
+// MatchesTest filters the set of tests to run by name.
 //
 // Returns true if the test regex matches test.
-func (f Filter) MatchesCase(t Case) bool {
+func (f Filter) MatchesTest(t Case) bool {
 	return true
 }

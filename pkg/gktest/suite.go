@@ -38,7 +38,7 @@ func (s *Suite) Run(ctx context.Context, client Client, f fs.FS, filter Filter) 
 		TestResults: make([]TestResult, len(s.Tests)),
 	}
 	for i, c := range s.Tests {
-		if filter.MatchesTest(c) {
+		if filter.MatchesConstraint(c) {
 			result.TestResults[i] = c.run(ctx, client, f, filter)
 		}
 	}
@@ -178,7 +178,7 @@ func (t Test) run(ctx context.Context, client Client, f fs.FS, filter Filter) Te
 
 	results := make([]CaseResult, len(t.Cases))
 	for i, tc := range t.Cases {
-		if !filter.MatchesCase(tc) {
+		if !filter.MatchesTest(tc) {
 			continue
 		}
 
@@ -190,7 +190,7 @@ func (t Test) run(ctx context.Context, client Client, f fs.FS, filter Filter) Te
 // Case runs Constraint against a YAML object.
 type Case struct{}
 
-// run executes the Case and returns the Result of the run.
+// run executes the Cest and returns the Result of the run.
 func (c Case) run(f fs.FS, client Client) CaseResult {
 	return CaseResult{}
 }
