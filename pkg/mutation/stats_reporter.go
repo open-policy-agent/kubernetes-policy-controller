@@ -17,17 +17,27 @@ const (
 	mutationSystemIterationsMetricName = "mutation_system_iterations"
 )
 
-type MutatorStatus string
+// MutatorIngestionStatus defines the outcomes of an attempt to add a Mutator to the mutation System.
+type MutatorIngestionStatus string
+
+// SystemConvergenceStatus defines the outcomes of the attempted mutation of an object by the
+// mutation System.  The System is meant to converge on a fully mutated object.
 type SystemConvergenceStatus string
 
 var (
-	mutatorStatusKey                  = tag.MustNewKey("status")
-	MutatorStatusActive MutatorStatus = "active"
-	MutatorStatusError  MutatorStatus = "error"
+	mutatorStatusKey = tag.MustNewKey("status")
 
-	systemConvergenceKey                           = tag.MustNewKey("success")
-	SystemConverganceTrue  SystemConvergenceStatus = "true"
-	SystemConverganceFalse SystemConvergenceStatus = "false"
+	// MutatorStatusActive denotes a successfully ingested mutator, ready to mutate objects.
+	MutatorStatusActive MutatorIngestionStatus = "active"
+	// MutatorStatusError denotes a mutator that failed to ingest.
+	MutatorStatusError MutatorIngestionStatus = "error"
+
+	systemConvergenceKey = tag.MustNewKey("success")
+
+	// SystemConvergenceTrue denotes a successfully converged mutation system request.
+	SystemConvergenceTrue SystemConvergenceStatus = "true"
+	// SystemConvergenceFalse denotes an unsuccessfully converged mutation system request.
+	SystemConvergenceFalse SystemConvergenceStatus = "false"
 
 	responseTimeInSecM = stats.Float64(
 		mutatorIngestionDurationMetricName,
@@ -55,7 +65,7 @@ type reporter struct {
 	ctx context.Context
 }
 
-func (r *reporter) reportMutatorIngestionRequest(ms MutatorStatus, d time.Duration) error {
+func (r *reporter) reportMutatorIngestionRequest(ms MutatorIngestionStatus, d time.Duration) error {
 	ctx, err := tag.New(
 		r.ctx,
 		tag.Insert(mutatorStatusKey, string(ms)),
@@ -67,7 +77,7 @@ func (r *reporter) reportMutatorIngestionRequest(ms MutatorStatus, d time.Durati
 	return r.report(ctx, responseTimeInSecM.M(d.Seconds()))
 }
 
-func (r *reporter) reportMutatorsStatus(ms MutatorStatus, n int) error {
+func (r *reporter) reportMutatorsStatus(ms MutatorIngestionStatus, n int) error {
 	ctx, err := tag.New(
 		r.ctx,
 		tag.Insert(mutatorStatusKey, string(ms)),
